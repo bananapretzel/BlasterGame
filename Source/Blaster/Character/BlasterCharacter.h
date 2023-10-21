@@ -60,6 +60,9 @@ public:
 	void UpdateHUDAmmo();
 	void SpawnDefaultWeapon();
 
+	UPROPERTY()
+	TMap<FName, class UBoxComponent*> HitCollisionBoxes;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -132,7 +135,7 @@ protected:
 	void DropOrDestroyWeapons();
 
 	/**
-	* Hotboxes used for server-side rewind.
+	* Hitboxes used for server-side rewind.
 	*/
 
 	UPROPERTY(EditAnywhere)
@@ -187,7 +190,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class UBoxComponent* foot_r;
 
-
+	
 
 
 private:
@@ -230,11 +233,18 @@ private:
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
 
+	/** 
+	* Blaster components
+	*/
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCombatComponent* Combat;
 
 	UPROPERTY(VisibleAnywhere)
 	class UBuffComponent* BuffComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	class ULagCompensationComponent* LagCompensation;
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();
