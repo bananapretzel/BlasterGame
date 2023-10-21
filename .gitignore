@@ -1,11 +1,13 @@
 Binaries
 Build
-Config
+Content
 DerivedDataCache
 Intermediate
 Saved
 
 
+.uproject
+.vsconfig
 .vscode
 .vs
 *.VC.db
