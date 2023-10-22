@@ -79,6 +79,69 @@ void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, c
 	}
 }
 
+void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter, 
+	const FVector_NetQuantize& TraceStart, 
+	const FVector_NetQuantize& HitLocation, float HitTime) {
+
+	bool bReturn = 
+		HitCharacter == nullptr || 
+		HitCharacter->GetLagCompensation() == nullptr || 
+		HitCharacter->GetLagCompensation()->FrameHistory.GetHead() == nullptr ||
+		HitCharacter->GetLagCompensation()->FrameHistory.GetTail() == nullptr;
+
+	// Frame package that we check to verify a hit
+	FFramePackage FrameToCheck;
+	bool bShouldInterpolate = true;
+	// Frame history of the HitCharacter (character that you shot at).
+	const TDoubleLinkedList<FFramePackage>& History = HitCharacter->GetLagCompensation()->FrameHistory;
+
+	const float OldestHistoryTime = History.GetTail()->GetValue().Time;
+	const float LatestHistoryTime = History.GetHead()->GetValue().Time;
+
+
+
+	/**
+	* Checking cases where the frame to check (HitTime) is either the first 
+	* or last in the frame history or if it is out of bounds 
+	*/
+	if (OldestHistoryTime > HitTime) {
+		// HitTime is beyond the maximum history range, could be too laggy
+		return;
+	}
+	if (LatestHistoryTime <= HitTime) {
+		// HitTime is newer than the latest frame or equal to
+		FrameToCheck = History.GetHead()->GetValue();
+		bShouldInterpolate = false;
+	}
+	if (OldestHistoryTime == HitTime) {
+		// Checking edge case
+		FrameToCheck = History.GetTail()->GetValue();
+		bShouldInterpolate = false;
+	}
+
+	TDoubleLinkedList<FFramePackage>::TDoubleLinkedListNode* Younger = History.GetHead();
+	TDoubleLinkedList<FFramePackage>::TDoubleLinkedListNode* Older = History.GetHead();
+	while(Older->GetValue().Time > HitTime && FrameToCheck.Time == 0.f) { // Is Older still younger than HitTime?
+		// March back until Oldertime < HitTime < YoungerTime
+		if (Older->GetNextNode() == nullptr) {
+			break;
+		}
+		Older = Older->GetNextNode();
+		if (Older->GetValue().Time > HitTime) {
+			Younger = Older;
+		}
+	}
+	if (Older->GetValue().Time == HitTime) { // Unlikely but needs to be checked
+		FrameToCheck = Older->GetValue();
+		bShouldInterpolate = false;
+	}
+	if (bShouldInterpolate) {
+		// Interpolate between younger and older
+	}
+	if (bReturn) return;
+
+}
+
 
 
 
