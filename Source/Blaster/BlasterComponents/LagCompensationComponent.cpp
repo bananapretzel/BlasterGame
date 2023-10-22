@@ -1,30 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "LagCompensationComponent.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Components/BoxComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Components/BoxComponent.h"
 
-
-ULagCompensationComponent::ULagCompensationComponent()
-{
+ULagCompensationComponent::ULagCompensationComponent() {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-
 }
 
-
-
-void ULagCompensationComponent::BeginPlay()
-{
+void ULagCompensationComponent::BeginPlay() {
 	Super::BeginPlay();
-
-	
 }
-
 
 void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -52,6 +42,13 @@ void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 	}
 }
 
+/**
+* This function will be called every frame. It will take an empty FFramePackage
+* as its input and fill the package with the this owning character's hitbox
+* location, rotation, and extent in world space.
+*
+* @param Package An empty package for storing hotbox data
+*/
 void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package) {
 	Character = Character == nullptr ? Cast<ABlasterCharacter>(GetOwner()) : Character;
 	if (Character) {
@@ -66,8 +63,22 @@ void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package) {
 	}
 }
 
-FFramePackage ULagCompensationComponent::InterpBetweenFrames(FFramePackage& OlderFrame, FFramePackage& YoungerFrame, float HitTime) {
-
+/**
+* When a HitTime is found to be within the range of the oldest frame history
+* and youngest frame history, which was judged in the ServerSideRewind function,
+* An Interpolation is done between younger and older to determine where the
+* hitboxes were at HitTime
+*
+* @param  OlderFrame The frame that was found to be adjacent to HiTime on
+*		  the older side of the frame history
+* @param  YoungerFrame The frame that was found to be adjacent to HitTime on
+*		  the younger side of the frame history
+* @param  HitTime The local time of when a player shot their bullet
+* @return A FramePackage with hitboxes interpolated between younger and older
+*		  frame at the point of HitTime
+*/
+FFramePackage ULagCompensationComponent::InterpBetweenFrames(
+	FFramePackage& OlderFrame, FFramePackage& YoungerFrame, float HitTime) {
 	const float Distance = YoungerFrame.Time - OlderFrame.Time;
 	const float InterpFraction = FMath::Clamp((HitTime - OlderFrame.Time) / Distance, 0.f, 1.f);
 
@@ -91,8 +102,169 @@ FFramePackage ULagCompensationComponent::InterpBetweenFrames(FFramePackage& Olde
 
 	return InterpFramePackage;
 }
+/**
+* The definitive function to check if the character was hit or not with lag
+* compensation in mind. This function take a note (cache) of where the current
+* HitCharacter is on the server and then moves all of its hitboxes to the
+* position of where it was at HitTime (which likely has been interpolated).
+* This is done so a line trace can be used to determine a hit or not.
+*
+* @param  Package A frame, likely interpolated, which denotes where the
+		  HitCharacter's position was in the past when the instigator fired
+		  their bullet.
+* @param  HitCharacter The Character which is being checked to see whether they
+*		  got hit or not.
+* @param  TraceStart The starting vector to be used for the line trace
+* @param  HitLocation The location in world space where the instigator hit the
+*		  character on their client.
+* @return The result of the line trace and whether there was a hit or not and
+		  whether it was a headshot or not
+*/
+FServerSideRewindResult ULagCompensationComponent::ConfirmHit(
+	const FFramePackage& Package,
+	ABlasterCharacter* HitCharacter,
+	const FVector_NetQuantize& TraceStart,
+	const FVector_NetQuantize& HitLocation) {
+	if (HitCharacter == nullptr) return FServerSideRewindResult();
 
-void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, const FColor& Color) {
+	FFramePackage CurrentFrame;
+	CacheBoxPositions(HitCharacter, CurrentFrame);
+	MoveBoxes(HitCharacter, Package);
+	// Disabling collision for HitCharacter's mesh so the line trace wouldn't interfere with it
+	EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::NoCollision);
+
+	// Enable collision for the head first
+	UBoxComponent* HeadBox = HitCharacter->HitCollisionBoxes[FName("head")];
+	// Get the head hitbox
+	HeadBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	// Turn on its collision for line trace
+	HeadBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+
+	FHitResult ConfirmHitResult;
+
+	const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
+	UWorld* World = GetWorld();
+	if (World) {
+		World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart,
+			TraceEnd, ECollisionChannel::ECC_Visibility);
+		if (ConfirmHitResult.bBlockingHit) { // Headshot confirmed
+			ResetHitBoxes(HitCharacter, CurrentFrame);
+			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
+			return FServerSideRewindResult{ true, true };
+		} else { // No headshot so checking the other hitboxes
+			for (auto& HitBoxPair : HitCharacter->HitCollisionBoxes) {
+				if (HitBoxPair.Value != nullptr) { // Turning on collision for hit boxes
+					HitBoxPair.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					HitBoxPair.Value->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+				}
+			}
+			World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart,
+				TraceEnd, ECollisionChannel::ECC_Visibility);
+			if (ConfirmHitResult.bBlockingHit) {
+				ResetHitBoxes(HitCharacter, CurrentFrame);
+				EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
+				return FServerSideRewindResult{ true, false };
+			}
+		}
+	}
+	// Past this comment, no confirmed hit detected
+	ResetHitBoxes(HitCharacter, CurrentFrame);
+	EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
+	return FServerSideRewindResult{ false, false };
+}
+
+/**
+* Since the server will be checking the HitCharacters location in the past, it 
+* will move its hit boxes to that position but it will also need to to cache its 
+* current position so it can switch back after checking if a hit was confirmed 
+* or not.
+* 
+* @param HitCharacter The character which will have its hitboxes cached
+* @param OutFramePackage The out-parameter for which hitbox data will be stored
+*/
+void ULagCompensationComponent::CacheBoxPositions(
+	ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage) {
+	if (HitCharacter == nullptr) return;
+
+	for (auto& HitBoxPair : HitCharacter->HitCollisionBoxes) {
+		if (HitBoxPair.Value != nullptr) {
+			FBoxInformation BoxInfo;
+			BoxInfo.Location = HitBoxPair.Value->GetComponentLocation();
+			BoxInfo.Rotation = HitBoxPair.Value->GetComponentRotation();
+			BoxInfo.BoxExtent = HitBoxPair.Value->GetScaledBoxExtent();
+			OutFramePackage.HitBoxInfo.Add(HitBoxPair.Key, BoxInfo);
+		}
+	}
+}
+
+/**
+* A function closely relevant to CacheBoxPositions. This function will take a 
+* character and shift its hitboxes to the position from the given frame package.
+* 
+* @param HitCharacter The character to have their hitboxes shifted
+* @param Package A package with hitbox location data to shift the HitCharacter's
+*		 hitboxes to
+*/
+void ULagCompensationComponent::MoveBoxes(ABlasterCharacter* HitCharacter,
+	const FFramePackage& Package) {
+	if (HitCharacter == nullptr) return;
+	for (auto& HitBoxPair : HitCharacter->HitCollisionBoxes) {
+		if (HitBoxPair.Value != nullptr) {
+			HitBoxPair.Value->SetWorldLocation(Package.HitBoxInfo[HitBoxPair.Key].Location);
+			HitBoxPair.Value->SetWorldRotation(Package.HitBoxInfo[HitBoxPair.Key].Rotation);
+			HitBoxPair.Value->SetBoxExtent(Package.HitBoxInfo[HitBoxPair.Key].BoxExtent);
+		}
+	}
+}
+/**
+* This function should be used to shift the character's hitboxes back to their 
+* original current position after shifting them prior to check for a lag 
+* compensated hit. This is different than MoveBoxes because collision shall be 
+* re-enabled in this process.
+* 
+* @param HitCharacter The character to have their hitboxes shifted
+* @param Package A package with hitbox location data to shift the HitCharacter's
+*		 hitboxes to
+*/
+void ULagCompensationComponent::ResetHitBoxes(ABlasterCharacter* HitCharacter,
+	const FFramePackage& Package) {
+	if (HitCharacter == nullptr) return;
+	for (auto& HitBoxPair : HitCharacter->HitCollisionBoxes) {
+		if (HitBoxPair.Value != nullptr) {
+			HitBoxPair.Value->SetWorldLocation(Package.HitBoxInfo[HitBoxPair.Key].Location);
+			HitBoxPair.Value->SetWorldRotation(Package.HitBoxInfo[HitBoxPair.Key].Rotation);
+			HitBoxPair.Value->SetBoxExtent(Package.HitBoxInfo[HitBoxPair.Key].BoxExtent);
+			HitBoxPair.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+}
+/**
+* A function to enable to disable a character's mesh collision. This could be
+* used so the mesh would not interfere with a hitbox linetrace.
+*
+* @param HitCharacter A character to enable/disable collision. Typically this
+*		 should be the character that will be getting checked for a line trace.
+*
+* @param CollisionEnabled Enable or disable collision for HitCharacter.
+*/
+void ULagCompensationComponent::EnableCharacterMeshCollision(
+	ABlasterCharacter* HitCharacter, ECollisionEnabled::Type CollisionEnabled) {
+	if (HitCharacter && HitCharacter->GetMesh()) {
+		HitCharacter->GetMesh()->SetCollisionEnabled(CollisionEnabled);
+	}
+}
+
+/**
+* Debug function which will show all the frame history of the character's
+* hitboxes in game.
+*
+* @param Package A frame package for which its stored frame data will be
+*		 displayed.
+* @param Color Hitbox colour
+*/
+void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, 
+	const FColor& Color) {
+
 	for (auto& BoxInfo : Package.HitBoxInfo) {
 		DrawDebugBox(
 			GetWorld(),
@@ -104,16 +276,33 @@ void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, c
 			MaxRecordTime);
 	}
 }
-
-void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter, 
-	const FVector_NetQuantize& TraceStart, 
+/**
+* The primary function of this class. This functionis called when a server-side
+* rewind will take place. It will Check where the HitTime takes place in the
+* frame history and if it the HitTime is beyond the oldest frame, it will return
+* an empty result. Otherwise if the HitTime is determined to be within the range
+* of the frame history, the history will be iterated until it finds the two
+* adject frames between HitTime and an interpolation will take place to
+* determine if the victim character was hit with lag compensation enabled.
+*
+* @param  HitCharacter The character for which to check if they were hit or not
+* @param  TraceStart The start of the line trace from where the instigator shot
+* @param  HitLocation Location in world space where there was a hit on the client
+* @param  HitTime The time at which a client hit a target on their end
+* @return A Struct which confirms if a hit was made with lag compensation in
+*		  mind using this function and whether it was a headshot or not
+*/
+FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(
+	ABlasterCharacter* HitCharacter,
+	const FVector_NetQuantize& TraceStart,
 	const FVector_NetQuantize& HitLocation, float HitTime) {
-
-	bool bReturn = 
-		HitCharacter == nullptr || 
-		HitCharacter->GetLagCompensation() == nullptr || 
+	bool bReturn =
+		HitCharacter == nullptr ||
+		HitCharacter->GetLagCompensation() == nullptr ||
 		HitCharacter->GetLagCompensation()->FrameHistory.GetHead() == nullptr ||
 		HitCharacter->GetLagCompensation()->FrameHistory.GetTail() == nullptr;
+
+	if (bReturn) return FServerSideRewindResult();
 
 	// Frame package that we check to verify a hit
 	FFramePackage FrameToCheck;
@@ -124,15 +313,13 @@ void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter
 	const float OldestHistoryTime = History.GetTail()->GetValue().Time;
 	const float LatestHistoryTime = History.GetHead()->GetValue().Time;
 
-
-
 	/**
-	* Checking cases where the frame to check (HitTime) is either the first 
-	* or last in the frame history or if it is out of bounds 
+	* Checking cases where the frame to check (HitTime) is either the first
+	* or last in the frame history or if it is out of bounds
 	*/
 	if (OldestHistoryTime > HitTime) {
 		// HitTime is beyond the maximum history range, could be too laggy
-		return;
+		return FServerSideRewindResult();
 	}
 	if (LatestHistoryTime <= HitTime) {
 		// HitTime is newer than the latest frame or equal to
@@ -147,7 +334,7 @@ void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter
 
 	TDoubleLinkedList<FFramePackage>::TDoubleLinkedListNode* Younger = History.GetHead();
 	TDoubleLinkedList<FFramePackage>::TDoubleLinkedListNode* Older = History.GetHead();
-	while(Older->GetValue().Time > HitTime && FrameToCheck.Time == 0.f) { // Is Older still younger than HitTime?
+	while (Older->GetValue().Time > HitTime && FrameToCheck.Time == 0.f) { // Is Older still younger than HitTime?
 		// March back until Oldertime < HitTime < YoungerTime
 		if (Older->GetNextNode() == nullptr) {
 			break;
@@ -163,11 +350,7 @@ void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter
 	}
 	if (bShouldInterpolate) {
 		// Interpolate between younger and older
+		FrameToCheck = InterpBetweenFrames(Older->GetValue(), Younger->GetValue(), HitTime);
 	}
-	if (bReturn) return;
-
+	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
 }
-
-
-
-
