@@ -5,6 +5,8 @@
 #include "Components/BoxComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Blaster/Weapon/Weapon.h"
 
 ULagCompensationComponent::ULagCompensationComponent() {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
@@ -18,6 +20,13 @@ void ULagCompensationComponent::BeginPlay() {
 
 void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	SaveFramePackage();
+	
+}
+
+void ULagCompensationComponent::SaveFramePackage() {
+	if (Character == nullptr || !Character->HasAuthority()) return;
 
 	// If Frame history is empty, Save a frame and make it the head
 	if (FrameHistory.Num() <= 1) {
@@ -38,7 +47,7 @@ void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 		FrameHistory.AddHead(ThisFrame);
 
 		// Show full history of hitboxes in game
-		ShowFramePackage(ThisFrame, FColor::Red);
+		// ShowFramePackage(ThisFrame, FColor::Red);
 	}
 }
 
@@ -254,6 +263,8 @@ void ULagCompensationComponent::EnableCharacterMeshCollision(
 	}
 }
 
+
+
 /**
 * Debug function which will show all the frame history of the character's
 * hitboxes in game.
@@ -353,4 +364,19 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(
 		FrameToCheck = InterpBetweenFrames(Older->GetValue(), Younger->GetValue(), HitTime);
 	}
 	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
+}
+
+void ULagCompensationComponent::ServerScoreRequest_Implementation(
+	ABlasterCharacter* HitCharacter, 
+	const FVector_NetQuantize& TraceStart, 
+	const FVector_NetQuantize& HitLocation, 
+	float HitTime, AWeapon* DamageCauser) {
+
+	FServerSideRewindResult Confirm = ServerSideRewind(HitCharacter, TraceStart, 
+		HitLocation, HitTime);
+
+	if (Character && HitCharacter && DamageCauser && Confirm.bHitConfirmed) {
+		UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(),
+			Character->Controller, DamageCauser, UDamageType::StaticClass());
+	}
 }
