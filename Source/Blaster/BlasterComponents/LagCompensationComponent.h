@@ -48,6 +48,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	void SaveFramePackage(FFramePackage& Package);
+	FFramePackage InterpBetweenFrames(FFramePackage& OlderFrame, FFramePackage& YoungerFrame, float HitTime);
 private:
 
 	UPROPERTY()
