@@ -22,8 +22,8 @@ void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	SaveFramePackage();
-	
 }
+
 
 void ULagCompensationComponent::SaveFramePackage() {
 	if (Character == nullptr || !Character->HasAuthority()) return;
@@ -62,6 +62,7 @@ void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package) {
 	Character = Character == nullptr ? Cast<ABlasterCharacter>(GetOwner()) : Character;
 	if (Character) {
 		Package.Time = GetWorld()->GetTimeSeconds();
+		Package.Character = Character;
 		for (auto& BoxPair : Character->HitCollisionBoxes) {
 			FBoxInformation BoxInformation;
 			BoxInformation.Location = BoxPair.Value->GetComponentLocation();
@@ -182,12 +183,21 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(
 	return FServerSideRewindResult{ false, false };
 }
 
+FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(
+	const TArray<FFramePackage>& FramePackages, 
+	const FVector_NetQuantize& TraceStart, 
+	const TArray<FVector_NetQuantize>& HitLocations) {
+
+
+	return FShotgunServerSideRewindResult();
+}
+
 /**
-* Since the server will be checking the HitCharacters location in the past, it 
-* will move its hit boxes to that position but it will also need to to cache its 
-* current position so it can switch back after checking if a hit was confirmed 
+* Since the server will be checking the HitCharacters location in the past, it
+* will move its hit boxes to that position but it will also need to to cache its
+* current position so it can switch back after checking if a hit was confirmed
 * or not.
-* 
+*
 * @param HitCharacter The character which will have its hitboxes cached
 * @param OutFramePackage The out-parameter for which hitbox data will be stored
 */
@@ -207,9 +217,9 @@ void ULagCompensationComponent::CacheBoxPositions(
 }
 
 /**
-* A function closely relevant to CacheBoxPositions. This function will take a 
+* A function closely relevant to CacheBoxPositions. This function will take a
 * character and shift its hitboxes to the position from the given frame package.
-* 
+*
 * @param HitCharacter The character to have their hitboxes shifted
 * @param Package A package with hitbox location data to shift the HitCharacter's
 *		 hitboxes to
@@ -226,11 +236,11 @@ void ULagCompensationComponent::MoveBoxes(ABlasterCharacter* HitCharacter,
 	}
 }
 /**
-* This function should be used to shift the character's hitboxes back to their 
-* original current position after shifting them prior to check for a lag 
-* compensated hit. This is different than MoveBoxes because collision shall be 
+* This function should be used to shift the character's hitboxes back to their
+* original current position after shifting them prior to check for a lag
+* compensated hit. This is different than MoveBoxes because collision shall be
 * re-enabled in this process.
-* 
+*
 * @param HitCharacter The character to have their hitboxes shifted
 * @param Package A package with hitbox location data to shift the HitCharacter's
 *		 hitboxes to
@@ -263,8 +273,6 @@ void ULagCompensationComponent::EnableCharacterMeshCollision(
 	}
 }
 
-
-
 /**
 * Debug function which will show all the frame history of the character's
 * hitboxes in game.
@@ -273,9 +281,8 @@ void ULagCompensationComponent::EnableCharacterMeshCollision(
 *		 displayed.
 * @param Color Hitbox colour
 */
-void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, 
+void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package,
 	const FColor& Color) {
-
 	for (auto& BoxInfo : Package.HitBoxInfo) {
 		DrawDebugBox(
 			GetWorld(),
@@ -288,7 +295,9 @@ void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package,
 	}
 }
 /**
-* The primary function of this class. This functionis called when a server-side
+* TODO Update comments
+* 
+* The primary function of this class. This function is called when a server-side
 * rewind will take place. It will Check where the HitTime takes place in the
 * frame history and if it the HitTime is beyond the oldest frame, it will return
 * an empty result. Otherwise if the HitTime is determined to be within the range
@@ -307,13 +316,35 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(
 	ABlasterCharacter* HitCharacter,
 	const FVector_NetQuantize& TraceStart,
 	const FVector_NetQuantize& HitLocation, float HitTime) {
+
+	FFramePackage FrameToCheck = GetFrameToCheck(HitCharacter, HitTime);
+	
+	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
+}
+
+FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewing(
+	const TArray<ABlasterCharacter*>& HitCharacters, 
+	const FVector_NetQuantize& TraceStart, 
+	const TArray<FVector_NetQuantize>& HitLocations, 
+	float HitTime) {
+
+	TArray<FFramePackage> FramesToCheck;
+	for (ABlasterCharacter* HitCharacter : HitCharacters) {
+		FramesToCheck.Add(GetFrameToCheck(HitCharacter, HitTime));
+	}
+	return FShotgunServerSideRewindResult();
+}
+
+
+
+FFramePackage ULagCompensationComponent::GetFrameToCheck(ABlasterCharacter* HitCharacter, float HitTime) {
 	bool bReturn =
 		HitCharacter == nullptr ||
 		HitCharacter->GetLagCompensation() == nullptr ||
 		HitCharacter->GetLagCompensation()->FrameHistory.GetHead() == nullptr ||
 		HitCharacter->GetLagCompensation()->FrameHistory.GetTail() == nullptr;
 
-	if (bReturn) return FServerSideRewindResult();
+	if (bReturn) return FFramePackage();
 
 	// Frame package that we check to verify a hit
 	FFramePackage FrameToCheck;
@@ -330,7 +361,7 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(
 	*/
 	if (OldestHistoryTime > HitTime) {
 		// HitTime is beyond the maximum history range, could be too laggy
-		return FServerSideRewindResult();
+		return FFramePackage();
 	}
 	if (LatestHistoryTime <= HitTime) {
 		// HitTime is newer than the latest frame or equal to
@@ -363,16 +394,20 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(
 		// Interpolate between younger and older
 		FrameToCheck = InterpBetweenFrames(Older->GetValue(), Younger->GetValue(), HitTime);
 	}
-	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
+	return FrameToCheck;
 }
 
-void ULagCompensationComponent::ServerScoreRequest_Implementation(
-	ABlasterCharacter* HitCharacter, 
-	const FVector_NetQuantize& TraceStart, 
-	const FVector_NetQuantize& HitLocation, 
-	float HitTime, AWeapon* DamageCauser) {
 
-	FServerSideRewindResult Confirm = ServerSideRewind(HitCharacter, TraceStart, 
+
+/**
+*
+*/
+void ULagCompensationComponent::ServerScoreRequest_Implementation(
+	ABlasterCharacter* HitCharacter,
+	const FVector_NetQuantize& TraceStart,
+	const FVector_NetQuantize& HitLocation,
+	float HitTime, AWeapon* DamageCauser) {
+	FServerSideRewindResult Confirm = ServerSideRewind(HitCharacter, TraceStart,
 		HitLocation, HitTime);
 
 	if (Character && HitCharacter && DamageCauser && Confirm.bHitConfirmed) {
