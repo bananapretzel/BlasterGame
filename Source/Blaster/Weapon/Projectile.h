@@ -27,6 +27,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	float InitialSpeed = 15000.f;
 
+	float Damage = 20.f;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -41,8 +43,7 @@ protected:
 		UPrimitiveComponent* OtherComp, FVector NormalImpulse,
 		const FHitResult& Hit);
 
-	UPROPERTY(EditAnywhere)
-	float Damage = 10.f;
+	
 
 	UPROPERTY(EditAnywhere)
 	class USoundCue* ImpactSound;
