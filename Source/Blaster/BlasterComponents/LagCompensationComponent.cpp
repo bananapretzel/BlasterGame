@@ -21,7 +21,9 @@ void ULagCompensationComponent::BeginPlay() {
 void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	
 	SaveFramePackage();
+
 }
 
 void ULagCompensationComponent::SaveFramePackage() {
@@ -88,6 +90,7 @@ void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package) {
 */
 FFramePackage ULagCompensationComponent::InterpBetweenFrames(
 	FFramePackage& OlderFrame, FFramePackage& YoungerFrame, float HitTime) {
+
 	const float Distance = YoungerFrame.Time - OlderFrame.Time;
 	const float InterpFraction = FMath::Clamp((HitTime - OlderFrame.Time) / Distance, 0.f, 1.f);
 
@@ -186,6 +189,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(
 	const TArray<FFramePackage>& FramePackages,
 	const FVector_NetQuantize& TraceStart,
 	const TArray<FVector_NetQuantize>& HitLocations) {
+
 	for (auto& Frame : FramePackages) {
 		if (Frame.Character == nullptr) return FShotgunServerSideRewindResult();
 	}
@@ -401,6 +405,7 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(
 	ABlasterCharacter* HitCharacter,
 	const FVector_NetQuantize& TraceStart,
 	const FVector_NetQuantize& HitLocation, float HitTime) {
+
 	FFramePackage FrameToCheck = GetFrameToCheck(HitCharacter, HitTime);
 	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
 }
@@ -409,6 +414,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewin
 	const TArray<ABlasterCharacter*>& HitCharacters,
 	const FVector_NetQuantize& TraceStart,
 	const TArray<FVector_NetQuantize>& HitLocations, float HitTime) {
+
 	TArray<FFramePackage> FramesToCheck;
 	for (ABlasterCharacter* HitCharacter : HitCharacters) {
 		FramesToCheck.Add(GetFrameToCheck(HitCharacter, HitTime));
@@ -473,6 +479,7 @@ FFramePackage ULagCompensationComponent::GetFrameToCheck(ABlasterCharacter* HitC
 		// Interpolate between younger and older
 		FrameToCheck = InterpBetweenFrames(Older->GetValue(), Younger->GetValue(), HitTime);
 	}
+	FrameToCheck.Character = HitCharacter;
 	return FrameToCheck;
 }
 
@@ -501,7 +508,7 @@ void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(
 	FShotgunServerSideRewindResult Confirm = ShotgunServerSideRewind(
 		HitCharacters, TraceStart, HitLocations, HitTime);
 
-	for (ABlasterCharacter* HitCharacter : HitCharacters) {
+	for (auto& HitCharacter : HitCharacters) {
 		if (HitCharacter == nullptr ||
 			HitCharacter->GetEquippedWeapon() == nullptr ||
 			Character == nullptr) {

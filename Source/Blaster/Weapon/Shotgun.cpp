@@ -7,6 +7,9 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Blaster/BlasterComponents/LagCompensationComponent.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
+#include "Blaster/BlasterComponents/LagCompensationComponent.h"
 
 void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets) {
 	AWeapon::Fire(FVector());
@@ -21,7 +24,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets) {
 
 		// Maps hit character to number of times hit
 		TMap<ABlasterCharacter*, uint32> HitMap;
-		for (FVector_NetQuantize HitTarget : HitTargets) {
+		for (const FVector_NetQuantize HitTarget : HitTargets) {
 			FHitResult FireHit;
 			WeaponTraceHit(Start, HitTarget, FireHit);
 
@@ -49,15 +52,31 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets) {
 				}
 			}
 		}
+		TArray<ABlasterCharacter*> HitCharacters;
 		for (auto HitPair : HitMap) {
-			if (HitPair.Key && HasAuthority() && InstigatorController) {
-				UGameplayStatics::ApplyDamage(
-					HitPair.Key, //  Character that was hit
-					Damage * HitPair.Value, // Multiply damage by number of times hit
-					InstigatorController,
-					this,
-					UDamageType::StaticClass()
-				);
+			if (HitPair.Key && InstigatorController) {
+				if (HasAuthority() && !bUseServerSideRewind) {
+					UGameplayStatics::ApplyDamage(
+						HitPair.Key, //  Character that was hit
+						Damage * HitPair.Value, // Multiply damage by number of times hit
+						InstigatorController,
+						this,
+						UDamageType::StaticClass());
+				}
+				HitCharacters.Add(HitPair.Key);
+			}
+		}
+		if (!HasAuthority() && bUseServerSideRewind) { // Not the server therefore need to use lag compensation for fair gameplay
+			BlasterOwnerCharacter = BlasterOwnerCharacter == nullptr ?
+				Cast<ABlasterCharacter>(OwnerPawn) : BlasterOwnerCharacter;
+
+			BlasterOwnerController = BlasterOwnerController == nullptr ?
+				Cast<ABlasterPlayerController>(OwnerPawn) : BlasterOwnerController;
+
+			if (BlasterOwnerController && BlasterOwnerCharacter && BlasterOwnerCharacter->GetLagCompensation() && BlasterOwnerCharacter->IsLocallyControlled()) {
+				BlasterOwnerCharacter->GetLagCompensation()->ShotgunServerScoreRequest(
+					HitCharacters, Start, HitTargets,
+					BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime);
 			}
 		}
 	}
