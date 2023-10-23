@@ -238,7 +238,7 @@ bool UCombatComponent::CanFire() {
 	}
 	if (bLocallyReloading) return false;
 	if (!EquippedWeapon->IsEmpty() &&
-		bCanFire && 
+		bCanFire &&
 		CombatState == ECombatState::ECS_Reloading &&
 		EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun) {
 		return true;
@@ -341,7 +341,6 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 
 void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets) {
 	MulticastShotgunFire(TraceHitTargets);
-
 }
 void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets) {
 	if (Character && Character->IsLocallyControlled() && !Character->HasAuthority()) return;
@@ -365,7 +364,6 @@ void UCombatComponent::LocalShotgunFire(const TArray<FVector_NetQuantize>& Trace
 		Shotgun->FireShotgun(TraceHitTargets);
 		CombatState = ECombatState::ECS_Unoccupied;
 	}
-
 }
 
 void UCombatComponent::OnRep_CarriedAmmo() {
@@ -729,7 +727,7 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount) {
 void UCombatComponent::FinishReloading() {
 	if (Character == nullptr) return;
 	bLocallyReloading = false;
-	
+
 	if (Character->HasAuthority()) {
 		CombatState = ECombatState::ECS_Unoccupied;
 		UpdateAmmoValues();

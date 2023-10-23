@@ -117,8 +117,6 @@ private:
 	UPROPERTY()
 	class ABlasterHUD* HUD;
 
-	
-
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
 	AWeapon* EquippedWeapon;
 

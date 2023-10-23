@@ -66,15 +66,15 @@ public:
 	friend class ABlasterCharacter;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void ShowFramePackage(const FFramePackage& Package, const FColor& Color);
-	FServerSideRewindResult ServerSideRewind(ABlasterCharacter* HitCharacter, 
-		const FVector_NetQuantize& TraceStart, 
+	FServerSideRewindResult ServerSideRewind(ABlasterCharacter* HitCharacter,
+		const FVector_NetQuantize& TraceStart,
 		const FVector_NetQuantize& HitLocation, float HitTime);
 
 	UFUNCTION(Server, Reliable)
 	void ServerScoreRequest(
-		ABlasterCharacter* HitCharacter, 
+		ABlasterCharacter* HitCharacter,
 		const FVector_NetQuantize& TraceStart,
-		const FVector_NetQuantize& HitLocation, 
+		const FVector_NetQuantize& HitLocation,
 		float HitTime,
 		class AWeapon* DamageCauser);
 
@@ -85,7 +85,7 @@ protected:
 	FFramePackage InterpBetweenFrames(FFramePackage& OlderFrame, FFramePackage& YoungerFrame, float HitTime);
 
 	FServerSideRewindResult ConfirmHit(const FFramePackage& Package,
-		ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, 
+		ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart,
 		const FVector_NetQuantize& HitLocation);
 
 	void CacheBoxPositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage);
@@ -97,9 +97,9 @@ protected:
 	/**
 	* Shotgun
 	*/
-	FShotgunServerSideRewindResult ShotgunServerSideRewing(
-		const TArray<ABlasterCharacter*>& HitCharacters, 
-		const FVector_NetQuantize& TraceStart, 
+	FShotgunServerSideRewindResult ShotgunServerSideRewind(
+		const TArray<ABlasterCharacter*>& HitCharacters,
+		const FVector_NetQuantize& TraceStart,
 		const TArray<FVector_NetQuantize>& HitLocations,
 		float HitTime);
 
@@ -120,5 +120,4 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float MaxRecordTime = 1.f;
-
 };
