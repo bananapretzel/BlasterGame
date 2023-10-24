@@ -2,7 +2,9 @@
 
 #include "ProjectileBullet.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/Character.h"
+#include "Blaster/Character/BlasterCharacter.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
+#include "Blaster/BlasterComponents/LagCompensationComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Sound/SoundCue.h"
 //#include "Net/UnrealNetwork.h"
@@ -69,17 +71,32 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp,
 		return;
 	}
 
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	ACharacter* OtherCharacter = Cast<ACharacter>(OtherActor);
+	ABlasterCharacter* OwnerCharacter = Cast<ABlasterCharacter>(GetOwner());
+	ABlasterCharacter* OtherCharacter = Cast<ABlasterCharacter>(OtherActor);
 	if (OwnerCharacter) {
-		AController* OwnerController = OwnerCharacter->Controller;
+		ABlasterPlayerController* OwnerController = Cast<ABlasterPlayerController>(OwnerCharacter->Controller);
 		if (OwnerController) {
-			UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, this, UDamageType::StaticClass());
+			if (HasAuthority() && !bUseServerSideRewind) {// On server
+				UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, this, UDamageType::StaticClass());
+				Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
+				return;
+			}
+			if (bUseServerSideRewind && OwnerCharacter->GetLagCompensation() && 
+				OwnerCharacter->IsLocallyControlled() && OtherCharacter) {
+
+				OwnerCharacter->GetLagCompensation()->ProjectileServerScoreRequest(
+				OtherCharacter, TraceStart, InitialVelocity, 
+				OwnerController->GetServerTime() - OwnerController->SingleTripTime);
+
+
+			}
+			/*
 			if (OtherCharacter != nullptr) {
 				ServerImpactEffects(true);
 			} else {
 				ServerImpactEffects(false);
 			}
+			*/
 		}
 	}
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);

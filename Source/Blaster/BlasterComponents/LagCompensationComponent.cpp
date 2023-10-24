@@ -15,6 +15,8 @@ ULagCompensationComponent::ULagCompensationComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
+
+
 void ULagCompensationComponent::BeginPlay() {
 	Super::BeginPlay();
 }
@@ -619,6 +621,19 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(
 	if (Character && HitCharacter && DamageCauser && Confirm.bHitConfirmed) {
 		UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(),
 			Character->Controller, DamageCauser, UDamageType::StaticClass());
+	}
+}
+
+void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(
+	ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, 
+	const FVector_NetQuantize100& InitialVelocity, float HitTime) {
+
+	FServerSideRewindResult Confirm = ProjectileServerSideRewind(HitCharacter, 
+		TraceStart, InitialVelocity, HitTime);
+
+	if (Character && HitCharacter && Confirm.bHitConfirmed) {
+		UGameplayStatics::ApplyDamage(HitCharacter, Character->GetEquippedWeapon()->GetDamage(),
+			Character->Controller, Character->GetEquippedWeapon(), UDamageType::StaticClass());
 	}
 }
 
