@@ -17,6 +17,8 @@ class BLASTER_API ABlasterPlayerController : public APlayerController {
 	GENERATED_BODY()
 
 public:
+
+
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnPossess(APawn* InPawn) override;
@@ -44,6 +46,8 @@ protected:
 
 	virtual void BeginPlay() override;
 	void SetHUDTime();
+	virtual void SetupInputComponent() override;
+	void ShowReturnToMainMenu();
 
 	/**
 	* Sync time between clinet and server
@@ -56,6 +60,9 @@ protected:
 	// Reports the current server time to the client in response to ServerRequestServerTime
 	UFUNCTION(Client, Reliable)
 	void ClientReportServerTime(float TimeOfClientRequest, float TimeServerReceivedClientRequest);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* EscapeMenuAction;
 
 	float ClientServerDelta = 0.f; //  Difference between client and server time
 
@@ -81,6 +88,15 @@ protected:
 private:
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;
+
+	/** Return to main menu */
+	UPROPERTY(EditAnywhere, Category = HUD)
+	TSubclassOf<class UUserWidget> ReturnToMainMenuWidget;
+
+	UPROPERTY()
+	class UReturnToMainMenu* ReturnToMainMenu;
+
+	bool bReturnToMainMenuOpen = false;
 
 	UPROPERTY()
 	class ABlasterGameMode* BlasterGameMode;

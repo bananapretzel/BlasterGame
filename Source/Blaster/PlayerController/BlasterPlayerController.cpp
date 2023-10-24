@@ -16,6 +16,8 @@
 #include "Blaster/BlasterComponents/CombatComponent.h"
 #include "Blaster/GameState/BlasterGameState.h"
 #include "Components/Image.h"
+#include "Blaster/HUD/ReturnToMainMenu.h"
+#include "EnhancedInputComponent.h"
 
 void ABlasterPlayerController::BeginPlay() {
 	Super::BeginPlay();
@@ -464,3 +466,29 @@ void ABlasterPlayerController::HandleCooldown() {
 		BlasterCharacter->GetCombat()->FireButtonPressed(false);
 	}
 }
+
+void ABlasterPlayerController::SetupInputComponent() {
+	Super::SetupInputComponent();
+	if (InputComponent == nullptr) return;
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent)) {
+		EnhancedInputComponent->BindAction(EscapeMenuAction, ETriggerEvent::Triggered, this, &ABlasterPlayerController::ShowReturnToMainMenu);
+	}
+}
+
+void ABlasterPlayerController::ShowReturnToMainMenu() {
+	// TODO show the ReturnToMainMenu widget
+	if (ReturnToMainMenuWidget == nullptr) return;
+	if (ReturnToMainMenu == nullptr) {
+		ReturnToMainMenu = CreateWidget<UReturnToMainMenu>(this, ReturnToMainMenuWidget);
+	}
+	if (ReturnToMainMenu) {
+		bReturnToMainMenuOpen = !bReturnToMainMenuOpen; // set to it's current opposite value
+		if (bReturnToMainMenuOpen) {
+			ReturnToMainMenu->MenuSetup();
+		} else {
+			ReturnToMainMenu->MenuTearDown();
+		}
+	}
+}
+

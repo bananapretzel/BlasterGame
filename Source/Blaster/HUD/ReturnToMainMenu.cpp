@@ -6,28 +6,36 @@
 #include "Components/Button.h"
 #include "MultiplayerSessionsSubsystem.h"
 #include "GameFramework/GameModeBase.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 void UReturnToMainMenu::MenuSetup() {
 	AddToViewport();
 	SetVisibility(ESlateVisibility::Visible);
-	bIsFocusable = true;
+	SetIsFocusable(true);
 	UWorld* World = GetWorld();
 	if (World) {
 		PlayerController = PlayerController == nullptr ? World->GetFirstPlayerController() : PlayerController;
 		if (PlayerController) {
 			FInputModeGameAndUI InputModeData;
 			InputModeData.SetWidgetToFocus(TakeWidget());
-				PlayerController->SetInputMode(InputModeData);
-				PlayerController->SetShowMouseCursor(true);
+			PlayerController->SetInputMode(InputModeData);
+			PlayerController->SetShowMouseCursor(true);
+			PlayerController->GetPawnOrSpectator()->DisableInput(PlayerController);
+			ACharacter* Character = Cast<ACharacter>(PlayerController->GetPawn());
+			if (Character) {
+				Character->GetCharacterMovement()->SetMovementMode(MOVE_Walking); // Adjust this to the appropriate movement mode based on your game's settings.
+				Character->GetCharacterMovement()->DisableMovement();
+			}
 		}
 	}
-	if (ReturnButton) {
+	if (ReturnButton && !ReturnButton->OnClicked.IsBound()) {
 		ReturnButton->OnClicked.AddDynamic(this, &UReturnToMainMenu::ReturnButtonClicked);
 	}
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance) {
 		MultiplayerSessionsSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionsSubsystem>();
-		if (MultiplayerSessionsSubsystem) {
+		if (MultiplayerSessionsSubsystem && !MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.IsBound()) {
 			MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this, &UReturnToMainMenu::OnDestroySession);
 		}
 	}
@@ -65,10 +73,22 @@ void UReturnToMainMenu::MenuTearDown() {
 	if (World) {
 		PlayerController = PlayerController == nullptr ? World->GetFirstPlayerController() : PlayerController;
 		if (PlayerController) {
+			PlayerController->GetPawnOrSpectator()->DisableInput(PlayerController);
 			FInputModeGameOnly InputModeData;
 			PlayerController->SetInputMode(InputModeData);
 			PlayerController->SetShowMouseCursor(false);
+			PlayerController->GetPawnOrSpectator()->EnableInput(PlayerController);
+			ACharacter* Character = PlayerController->GetCharacter();
+			if (Character) {
+				Character->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+			}
 		}
+	}
+	if (ReturnButton && ReturnButton->OnClicked.IsBound()) {
+		ReturnButton->OnClicked.RemoveDynamic(this, &UReturnToMainMenu::ReturnButtonClicked);
+	}
+	if (MultiplayerSessionsSubsystem && MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.IsBound()) {
+		MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.RemoveDynamic(this, &UReturnToMainMenu::OnDestroySession);
 	}
 }
 

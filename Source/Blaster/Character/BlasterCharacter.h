@@ -114,6 +114,7 @@ protected:
 	void GrenadeButtonPressed(const FInputActionValue& Value);
 	void SwapWeaponsButtonPressed(const FInputActionValue& Value);
 
+
 	void CrouchButtonPressed(const FInputActionValue& Value);
 	void CrouchButtonReleased(const FInputActionValue& Value);
 
