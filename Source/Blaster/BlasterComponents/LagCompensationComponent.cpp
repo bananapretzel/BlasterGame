@@ -250,6 +250,9 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(
 					FQuat(Box->GetComponentRotation()),
 					FColor::Red, false, 8.f);
 			}
+			ResetHitBoxes(HitCharacter, CurrentFrame);
+			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
+			return FServerSideRewindResult{ true, true };
 		}
 	} else { // no headshot, check the rest of the hitboxes
 		for (auto& HitBoxPair : HitCharacter->HitCollisionBoxes) {

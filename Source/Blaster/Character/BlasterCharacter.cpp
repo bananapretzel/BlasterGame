@@ -70,7 +70,7 @@ ABlasterCharacter::ABlasterCharacter() {
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
-	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
 	Combat->SetIsReplicated(true);
 
 	BuffComponent = CreateDefaultSubobject<UBuffComponent>(TEXT("BuffComponent"));
@@ -349,7 +349,10 @@ void ABlasterCharacter::EquipButtonPressed(const FInputActionValue& Value) {
 	UE_LOG(LogTemp, Warning, TEXT("Equipbuttonpressed function activated"));
 
 	if (Combat) {
-		ServerEquipButtonPressed();
+		if (Combat->CombatState == ECombatState::ECS_Unoccupied) {
+			ServerEquipButtonPressed();
+		}
+		
 	}
 }
 
@@ -377,6 +380,15 @@ void ABlasterCharacter::SwapWeaponsButtonPressed(const FInputActionValue& Value)
 
 	if (Combat && Combat->ShouldSwapWeapons()) {
 		ServerSwapWeaponsButtonPressed();
+	}
+	bool bSwap = Combat->ShouldSwapWeapons() &&
+		!HasAuthority() &&
+		Combat->CombatState == ECombatState::ECS_Unoccupied &&
+		OverlappingWeapon == nullptr;
+	if (bSwap) {
+		PlaySwapMontage();
+		Combat->CombatState = ECombatState::ECS_SwappingWeapons;
+		bFinishedSwapping = false;
 	}
 }
 
@@ -889,6 +901,14 @@ void ABlasterCharacter::PlayThrowGrenadeMontage() {
 	if (AnimInstance && ThrowGrenadeMontage) {
 		AnimInstance->Montage_Play(ThrowGrenadeMontage);
 	}
+}
+
+void ABlasterCharacter::PlaySwapMontage() {
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && SwapMontage) {
+		AnimInstance->Montage_Play(SwapMontage);
+	}
+
 }
 
 void ABlasterCharacter::PlayHitReactMontage() {
