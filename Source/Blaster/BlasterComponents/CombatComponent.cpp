@@ -275,7 +275,7 @@ void UCombatComponent::FireProjectileWeapon() {
 		if (!Character->HasAuthority()) {
 			LocalFire(HitTarget);
 		}
-		ServerFire(HitTarget);
+		ServerFire(HitTarget, EquippedWeapon->FireDelay);
 	}
 }
 
@@ -285,7 +285,7 @@ void UCombatComponent::FireHitScanWeapon() {
 		if (!Character->HasAuthority()) {
 			LocalFire(HitTarget);
 		}
-		ServerFire(HitTarget);
+		ServerFire(HitTarget, EquippedWeapon->FireDelay);
 	}
 }
 
@@ -297,7 +297,7 @@ void UCombatComponent::FireShotgun() {
 		if (!Character->HasAuthority()) {
 			LocalShotgunFire(HitTargets);
 		}
-		ServerShotgunFire(HitTargets);
+		ServerShotgunFire(HitTargets, EquippedWeapon->FireDelay);
 	}
 }
 
@@ -328,8 +328,16 @@ void UCombatComponent::FireTimerFinished() {
 
 // If invoked by client, this function's block of code will now run on the server.
 // If server, code will also run on server.
-void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget) {
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget, float FireDelay) {
 	MulticastFire(TraceHitTarget);
+}
+
+bool UCombatComponent::ServerFire_Validate(const FVector_NetQuantize& TraceHitTarget, float FireDelay) {
+	if (EquippedWeapon) {
+		bool bNearlyEqual = FMath::IsNearlyEqual(EquippedWeapon->FireDelay, FireDelay, 0.001f);
+		return bNearlyEqual;
+	}
+	return true;
 }
 
 // This function will always run on the server due to ServerFire being a Server keyword
@@ -340,9 +348,18 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 	LocalFire(TraceHitTarget);
 }
 
-void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets) {
+void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets, float FireDelay) {
 	MulticastShotgunFire(TraceHitTargets);
 }
+
+bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuantize>& TraceHitTargets, float FireDelay) {
+	if (EquippedWeapon) {
+		bool bNearlyEqual = FMath::IsNearlyEqual(EquippedWeapon->FireDelay, FireDelay, 0.001f);
+		return bNearlyEqual;
+	}
+	return true;
+}
+
 void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets) {
 	if (Character && Character->IsLocallyControlled() && !Character->HasAuthority()) return;
 	LocalShotgunFire(TraceHitTargets);

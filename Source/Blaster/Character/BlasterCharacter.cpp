@@ -222,6 +222,16 @@ void ABlasterCharacter::Tick(float DeltaTime) {
 	PollInit();
 }
 
+void ABlasterCharacter::PollInit() {
+	if (BlasterPlayerState == nullptr) {
+		BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
+		if (BlasterPlayerState) {
+			BlasterPlayerState->AddToScore(0.f);
+			BlasterPlayerState->AddToDefeats(0);
+		}
+	}
+}
+
 void ABlasterCharacter::RotateInPlace(float DeltaTime) {
 	if (bDisableGameplay) {
 		bUseControllerRotationYaw = false;
@@ -507,15 +517,7 @@ void ABlasterCharacter::SpawnDefaultWeapon() {
 	}
 }
 
-void ABlasterCharacter::PollInit() {
-	if (BlasterPlayerState == nullptr) {
-		BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
-		if (BlasterPlayerState) {
-			BlasterPlayerState->AddToScore(0.f);
-			BlasterPlayerState->AddToDefeats(0);
-		}
-	}
-}
+
 
 /**
 * Calculating the offset in degrees between the zero pose and the current aim
