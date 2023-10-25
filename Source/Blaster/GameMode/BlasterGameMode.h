@@ -25,6 +25,7 @@ public:
 		ABlasterPlayerController* AttackerController);
 
 	virtual void RequestRespawn(ACharacter* EliminatedCharacter, AController* EliminatedController);
+	void PlayerLeftGame(class ABlasterPlayerState* PlayerLeaving);
 
 	UPROPERTY(EditDefaultsOnly)
 	float WarmupTime = 20.f;

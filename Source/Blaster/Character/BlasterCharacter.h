@@ -11,6 +11,8 @@
 #include "Blaster/BlasterTypes/CombatState.h"
 #include "BlasterCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLeftGame);
+
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -42,15 +44,18 @@ public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
 	bool IsWeaponEquipped();
 	bool IsAiming();
-	void Eliminate();
+	void Eliminate(bool bPlayerLeftGame);
 	virtual void Destroyed() override;
 	void PlayHitReactMontage();
+
+	UFUNCTION(Server, Reliable)
+	void ServerLeaveGame();
 
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastEliminate();
+	void MulticastEliminate(bool bPlayerLeftGame);
 
 	UPROPERTY()
 	class ABlasterPlayerState* BlasterPlayerState;
@@ -67,6 +72,8 @@ public:
 	TMap<FName, class UBoxComponent*> HitCollisionBoxes;
 
 	bool bFinishedSwapping = false;
+
+	FOnLeftGame OnLeftGame;
 
 protected:
 	// Called when the game starts or when spawned
@@ -314,6 +321,12 @@ private:
 	float EliminateDelay = 3.f;
 
 	void EliminateTimerFinished();
+
+	bool bLeftGame = false;
+
+	
+
+	
 
 	/**
 	* Dissolve effect

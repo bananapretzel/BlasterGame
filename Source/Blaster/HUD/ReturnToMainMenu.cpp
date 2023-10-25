@@ -8,6 +8,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Blaster/Character/BlasterCharacter.h"
 
 void UReturnToMainMenu::MenuSetup() {
 	AddToViewport();
@@ -92,9 +93,30 @@ void UReturnToMainMenu::MenuTearDown() {
 	}
 }
 
+
+
 void UReturnToMainMenu::ReturnButtonClicked() {
 	ReturnButton->SetIsEnabled(false);
-	if (MultiplayerSessionsSubsystem) {
+	UWorld* World = GetWorld();
+	if (World) {
+		APlayerController* FirstPlayerController = World->GetFirstPlayerController();
+	
+		if (FirstPlayerController) {
+			ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FirstPlayerController->GetPawn());
+			if (BlasterCharacter) {
+				BlasterCharacter->ServerLeaveGame();
+				BlasterCharacter->OnLeftGame.AddDynamic(this, &UReturnToMainMenu::OnPlayerLeftGame);
+			} else { // If BlasterCharacter doesn't have a pawn, assume it is reloading after being killed and enable the button so it can be clicked again
+				ReturnButton->SetIsEnabled(true);
+			}
+		}
+
+	}
+	
+}
+
+void UReturnToMainMenu::OnPlayerLeftGame() {
+if (MultiplayerSessionsSubsystem) {
 		MultiplayerSessionsSubsystem->DestroySession();
 	}
 }

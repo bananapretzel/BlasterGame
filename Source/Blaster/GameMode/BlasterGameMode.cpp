@@ -76,7 +76,7 @@ void ABlasterGameMode::PlayerEliminated(ABlasterCharacter* EliminatedCharacter,
 		VictimPlayerState->ClientUpdateKillFeed(AttackerPlayerState->GetPlayerName());
 	}
 	if (EliminatedCharacter) {
-		EliminatedCharacter->Eliminate();
+		EliminatedCharacter->Eliminate(false);
 	}
 }
 
@@ -120,5 +120,17 @@ void ABlasterGameMode::RequestRespawn(ACharacter* EliminatedCharacter,
 		}
 		RestartPlayerAtPlayerStart(EliminatedController,
 			SpawnPoints[FurthestSpawnPointIndex]);
+	}
+}
+
+void ABlasterGameMode::PlayerLeftGame(ABlasterPlayerState* PlayerLeaving) {
+	if (PlayerLeaving == nullptr) return;
+	ABlasterGameState* BlasterGameState = GetGameState<ABlasterGameState>();
+	if (BlasterGameState && BlasterGameState->TopScoringPlayers.Contains(PlayerLeaving)) {
+		BlasterGameState->TopScoringPlayers.Remove(PlayerLeaving);
+	}
+	ABlasterCharacter* CharacterLeaving = Cast<ABlasterCharacter>(PlayerLeaving->GetPawn());
+	if (CharacterLeaving) {
+		CharacterLeaving->Eliminate(true);
 	}
 }
