@@ -69,4 +69,12 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UEliminatedAnnouncement> EliminatedAnnouncementClass;
+
+	UPROPERTY(EditAnywhere)
+	float EliminatedAnnouncementTime = 5.f;
+
+	void EliminatedAnnouncementTimerFinished(UEliminatedAnnouncement* MsgToRemove);
+
+	UPROPERTY()
+	TArray<UEliminatedAnnouncement*> EliminatedMessages;
 };

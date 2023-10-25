@@ -5,6 +5,9 @@
 #include "CharacterOverlay.h"
 #include "AnnouncementOverlay.h"
 #include "EliminatedAnnouncement.h"
+#include "Components/HorizontalBox.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "Components/CanvasPanelSlot.h"
 
 void ABlasterHUD::BeginPlay() {
 	Super::BeginPlay();
@@ -77,7 +80,32 @@ void ABlasterHUD::AddEliminatedAnnouncement(FString Attacker, FString Victim) {
 		if (EliminatedAnnouncementWidget) {
 			EliminatedAnnouncementWidget->SetEliminatedAnnouncementText(Attacker, Victim);
 			EliminatedAnnouncementWidget->AddToViewport();
+
+			for (UEliminatedAnnouncement* Msg : EliminatedMessages) {
+				if (Msg && Msg->AnnouncementBox) {
+					UCanvasPanelSlot* CanvasSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Msg->AnnouncementBox);
+					if (CanvasSlot) {
+						FVector2D Position = CanvasSlot->GetPosition();
+						FVector2D NewPosition(CanvasSlot->GetPosition().X,
+							Position.Y - CanvasSlot->GetSize().Y);
+						CanvasSlot->SetPosition(NewPosition);
+					}
+				}
+			}
+			EliminatedMessages.Add(EliminatedAnnouncementWidget);
+
+			FTimerHandle EliminatedMsgTimer;
+			FTimerDelegate EliminatedMsgDelegate;
+			EliminatedMsgDelegate.BindUFunction(this, FName("ElimAnnouncementTimerFinished"), EliminatedAnnouncementWidget);
+			GetWorldTimerManager().SetTimer(EliminatedMsgTimer,
+				EliminatedMsgDelegate, EliminatedAnnouncementTime, false);
 		}
+	}
+}
+
+void ABlasterHUD::EliminatedAnnouncementTimerFinished(UEliminatedAnnouncement* MsgToRemove) {
+	if (MsgToRemove) {
+		MsgToRemove->RemoveFromParent();
 	}
 }
 
@@ -96,3 +124,5 @@ void ABlasterHUD::DrawCrosshair(UTexture2D* Texture,
 		TextureWidth, TextureHeight, 0.f, 0.f, 1.f, 1.f,
 		CrosshairColor);
 }
+
+
