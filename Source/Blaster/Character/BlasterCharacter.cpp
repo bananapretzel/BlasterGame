@@ -29,6 +29,9 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/BoxComponent.h"
 #include "Blaster/BlasterComponents/LagCompensationComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Blaster/GameState/BlasterGameState.h"
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter() {
@@ -189,6 +192,29 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(ABlasterCharacter, bDisableGameplay);
 }
 
+void ABlasterCharacter::MulticastGainedTheLead_Implementation() {
+	if (CrownSystem == nullptr) return;
+	if (CrownComponent == nullptr) {
+		CrownComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			CrownSystem,
+			GetCapsuleComponent(),
+			FName(),
+			GetActorLocation() + FVector(0.f, 0.f, 110.f),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition,
+			false);
+	}
+	if (CrownComponent) {
+		CrownComponent->Activate();
+	}
+}
+
+void ABlasterCharacter::MulticastLostTheLead_Implementation() {
+	if (CrownComponent) {
+		CrownComponent->DestroyComponent();
+	}
+}
+
 // Called when the game starts or when spawned
 void ABlasterCharacter::BeginPlay() {
 	// Call the base class
@@ -211,6 +237,10 @@ void ABlasterCharacter::BeginPlay() {
 	if (AttachedGrenade) {
 		AttachedGrenade->SetVisibility(false);
 	}
+
+	
+
+	
 }
 
 // Called every frame
@@ -228,6 +258,11 @@ void ABlasterCharacter::PollInit() {
 		if (BlasterPlayerState) {
 			BlasterPlayerState->AddToScore(0.f);
 			BlasterPlayerState->AddToDefeats(0);
+
+			ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));
+			if (BlasterGameState && BlasterGameState->TopScoringPlayers.Contains(BlasterPlayerState)) {
+				MulticastGainedTheLead();
+			}
 		}
 	}
 }

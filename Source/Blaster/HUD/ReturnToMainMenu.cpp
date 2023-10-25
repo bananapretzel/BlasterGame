@@ -36,7 +36,7 @@ void UReturnToMainMenu::MenuSetup() {
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance) {
 		MultiplayerSessionsSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionsSubsystem>();
-		if (MultiplayerSessionsSubsystem && !MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.IsBound()) {
+		if (MultiplayerSessionsSubsystem) {
 			MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this, &UReturnToMainMenu::OnDestroySession);
 		}
 	}
@@ -116,7 +116,9 @@ void UReturnToMainMenu::ReturnButtonClicked() {
 }
 
 void UReturnToMainMenu::OnPlayerLeftGame() {
+	UE_LOG(LogTemp, Warning, TEXT("OnPlayerLeftGame()"))
 if (MultiplayerSessionsSubsystem) {
+	UE_LOG(LogTemp, Warning, TEXT("MultiplayerSessionsSubsystem valid"))
 		MultiplayerSessionsSubsystem->DestroySession();
 	}
 }

@@ -75,6 +75,12 @@ public:
 
 	FOnLeftGame OnLeftGame;
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastGainedTheLead();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastLostTheLead();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -354,7 +360,7 @@ private:
 	UMaterialInstance* DissolveMaterialInstance;
 
 	/**
-	* Elim bot
+	* Eliminated effects
 	*/
 
 	UPROPERTY(EditAnywhere)
@@ -366,9 +372,13 @@ private:
 	UPROPERTY(EditAnywhere)
 	class USoundCue* ElimBotSound;
 
-	void UpdateHUDWeaponType();
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* CrownSystem;
 
-	bool bInputsSet = false;
+	UPROPERTY()
+	class UNiagaraComponent* CrownComponent;
+
+
 
 	/**
 	* Grenade
@@ -383,6 +393,10 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AWeapon> DefaultWeaponClass;
+
+	void UpdateHUDWeaponType();
+
+	bool bInputsSet = false;
 public:
 
 	ECombatState GetCombatState() const;
