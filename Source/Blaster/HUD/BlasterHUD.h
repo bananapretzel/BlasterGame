@@ -49,10 +49,16 @@ public:
 
 	void AddCharacterOverlay();
 	void AddAnnouncementOverlay();
+	void AddEliminatedAnnouncement(FString Attacker, FString Victim);
+
 protected:
 	virtual void BeginPlay() override;
 
 private:
+
+	UPROPERTY()
+	class APlayerController* OwningPlayer;
+
 	FHUDPackage HUDPackage;
 
 	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter,
@@ -60,4 +66,7 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float CrosshairSpreadMax = 16.f;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UEliminatedAnnouncement> EliminatedAnnouncementClass;
 };

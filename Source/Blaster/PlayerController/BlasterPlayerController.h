@@ -42,6 +42,8 @@ public:
 	float SingleTripTime = 0.f;
 
 	FHighPingDelegate HighPingDelegate;
+
+	void BroadcastEliminated(APlayerState* Attacker, APlayerState* Victim);
 protected:
 
 	virtual void BeginPlay() override;
@@ -84,6 +86,9 @@ protected:
 	void HighPingWarning();
 	void StopHighPingWarning();
 	void CheckPing(float DeltaTime);
+
+	UFUNCTION(Client, Reliable)
+	void ClientEliminatedAnnouncement(APlayerState* Attacker, APlayerState* Victim);
 
 private:
 	UPROPERTY()

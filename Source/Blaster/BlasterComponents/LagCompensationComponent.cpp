@@ -164,11 +164,13 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(
 			if (ConfirmHitResult.Component.IsValid()) {
 				UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component);
 				if (Box) {
+					/*
 					DrawDebugBox(GetWorld(), 
 						Box->GetComponentLocation(), 
 						Box->GetScaledBoxExtent(), 
 						FQuat(Box->GetComponentRotation()), 
 						FColor::Red, false, 8.f);
+						*/
 				}
 			}
 
@@ -189,11 +191,13 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(
 				if (ConfirmHitResult.Component.IsValid()) {
 					UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component);
 					if (Box) {
+						/*
 						DrawDebugBox(GetWorld(), 
 							Box->GetComponentLocation(), 
 							Box->GetScaledBoxExtent(), 
 							FQuat(Box->GetComponentRotation()), 
 							FColor::Blue, false, 8.f);
+							*/
 					}
 				}
 				ResetHitBoxes(HitCharacter, CurrentFrame);
@@ -244,11 +248,13 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(
 		if (PathResult.HitResult.Component.IsValid()) {
 			UBoxComponent* Box = Cast<UBoxComponent>(PathResult.HitResult.Component);
 			if (Box) {
+				/*
 				DrawDebugBox(GetWorld(),
 					Box->GetComponentLocation(),
 					Box->GetScaledBoxExtent(),
 					FQuat(Box->GetComponentRotation()),
 					FColor::Red, false, 8.f);
+					*/
 			}
 			ResetHitBoxes(HitCharacter, CurrentFrame);
 			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
@@ -266,11 +272,13 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(
 			if (PathResult.HitResult.Component.IsValid()) {
 				UBoxComponent* Box = Cast<UBoxComponent>(PathResult.HitResult.Component);
 				if (Box) {
+					/*
 					DrawDebugBox(GetWorld(),
 						Box->GetComponentLocation(),
 						Box->GetScaledBoxExtent(),
 						FQuat(Box->GetComponentRotation()),
 						FColor::Blue, false, 8.f);
+						*/
 				}
 			}
 			ResetHitBoxes(HitCharacter, CurrentFrame);
@@ -334,7 +342,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(
 				if (ConfirmHitResult.Component.IsValid()) {
 					UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component);
 					if (Box) {
-						DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Red, false, 8.f);
+						//DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Red, false, 8.f);
 					}
 				}
 				if (ShotgunResult.HeadShots.Contains(BlasterCharacter)) {
@@ -377,7 +385,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(
 				if (ConfirmHitResult.Component.IsValid()) {
 					UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component);
 					if (Box) {
-						DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Blue, false, 8.f);
+						//DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Blue, false, 8.f);
 					}
 				}
 				if (ShotgunResult.BodyShots.Contains(BlasterCharacter)) {
@@ -489,6 +497,7 @@ void ULagCompensationComponent::EnableCharacterMeshCollision(
 void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package,
 	const FColor& Color) {
 	for (const TPair<FName, FBoxInformation>& BoxInfo : Package.HitBoxInfo) {
+		/*
 		DrawDebugBox(
 			GetWorld(),
 			BoxInfo.Value.Location,
@@ -497,6 +506,7 @@ void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package,
 			Color,
 			false,
 			MaxRecordTime);
+			*/
 	}
 }
 /**

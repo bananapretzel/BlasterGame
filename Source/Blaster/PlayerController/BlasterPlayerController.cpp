@@ -19,6 +19,8 @@
 #include "Blaster/HUD/ReturnToMainMenu.h"
 #include "EnhancedInputComponent.h"
 
+
+
 void ABlasterPlayerController::BeginPlay() {
 	Super::BeginPlay();
 
@@ -80,6 +82,7 @@ void ABlasterPlayerController::CheckPing(float DeltaTime) {
 		}
 	}
 }
+
 
 // Is the ping too high?
 void ABlasterPlayerController::ServerReportPingStatus_Implementation(bool bHighPing) {
@@ -491,4 +494,34 @@ void ABlasterPlayerController::ShowReturnToMainMenu() {
 		}
 	}
 }
+\
+void ABlasterPlayerController::BroadcastEliminated(APlayerState* Attacker, APlayerState* Victim) {
+	ClientEliminatedAnnouncement(Attacker, Victim);
 
+}
+
+void ABlasterPlayerController::ClientEliminatedAnnouncement_Implementation(APlayerState* Attacker, APlayerState* Victim) {
+	APlayerState* Self = GetPlayerState<APlayerState>();
+	if (Attacker && Victim && Self) {
+		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+		if (BlasterHUD) {
+			if (Attacker == Self && Victim != Self) { // You killed someone
+				BlasterHUD->AddEliminatedAnnouncement("You", Victim->GetPlayerName());
+				return;
+			}
+			if (Victim == Self && Attacker != Self) { // Someone killed you
+				BlasterHUD->AddEliminatedAnnouncement(Attacker->GetPlayerName(), "you");
+				return;
+			}
+			if (Attacker == Victim && Attacker == Self) { // You killed yourself
+				BlasterHUD->AddEliminatedAnnouncement("You", "yourself");
+				return;
+			}
+			if (Attacker == Victim && Attacker != Self) { // Someone killed themself
+				BlasterHUD->AddEliminatedAnnouncement(Attacker->GetPlayerName(), "themself");
+				return;
+			}
+			BlasterHUD->AddEliminatedAnnouncement(Attacker->GetPlayerName(), Victim->GetPlayerName()); // Someone killed someone else
+		}
+	}
+}

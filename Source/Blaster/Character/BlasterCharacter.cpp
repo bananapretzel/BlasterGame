@@ -799,7 +799,9 @@ void ABlasterCharacter::MulticastEliminate_Implementation(bool bPlayerLeftGame) 
 	if (bHideSniperScope) {
 		ShowSniperScopeWidget(false);
 	}
-
+	if (CrownComponent) {
+		CrownComponent->DestroyComponent();
+	}
 	GetWorldTimerManager().SetTimer(EliminateTimer,
 		this,
 		&ABlasterCharacter::EliminateTimerFinished,

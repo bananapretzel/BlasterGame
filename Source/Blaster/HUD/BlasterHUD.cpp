@@ -4,9 +4,12 @@
 #include "GameFramework/PlayerController.h"
 #include "CharacterOverlay.h"
 #include "AnnouncementOverlay.h"
+#include "EliminatedAnnouncement.h"
 
 void ABlasterHUD::BeginPlay() {
 	Super::BeginPlay();
+
+	
 }
 
 void ABlasterHUD::DrawHUD() {
@@ -64,6 +67,17 @@ void ABlasterHUD::AddAnnouncementOverlay() {
 		AnnouncementOverlay = CreateWidget<UAnnouncementOverlay>(PlayerController, AnnouncementOverlayClass);
 		// Add to viewport
 		AnnouncementOverlay->AddToViewport();
+	}
+}
+
+void ABlasterHUD::AddEliminatedAnnouncement(FString Attacker, FString Victim) {
+	OwningPlayer = OwningPlayer == nullptr ? GetOwningPlayerController() : OwningPlayer;
+	if (OwningPlayer && EliminatedAnnouncementClass) {
+		UEliminatedAnnouncement* EliminatedAnnouncementWidget = CreateWidget<UEliminatedAnnouncement>(OwningPlayer, EliminatedAnnouncementClass);
+		if (EliminatedAnnouncementWidget) {
+			EliminatedAnnouncementWidget->SetEliminatedAnnouncementText(Attacker, Victim);
+			EliminatedAnnouncementWidget->AddToViewport();
+		}
 	}
 }
 
