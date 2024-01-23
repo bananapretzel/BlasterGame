@@ -11,7 +11,7 @@
 
 void ABlasterHUD::BeginPlay() {
 	Super::BeginPlay();
-
+	AddEliminatedAnnouncement("Player1", "Player2");
 	
 }
 
@@ -83,7 +83,7 @@ void ABlasterHUD::AddEliminatedAnnouncement(FString Attacker, FString Victim) {
 
 			for (UEliminatedAnnouncement* Msg : EliminatedMessages) {
 				if (Msg && Msg->AnnouncementBox) {
-					UCanvasPanelSlot* CanvasSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Msg->AnnouncementBox);
+					UCanvasPanelSlot* CanvasSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Cast<UWidget>(Msg->AnnouncementBox));
 					if (CanvasSlot) {
 						FVector2D Position = CanvasSlot->GetPosition();
 						FVector2D NewPosition(CanvasSlot->GetPosition().X,
@@ -96,7 +96,7 @@ void ABlasterHUD::AddEliminatedAnnouncement(FString Attacker, FString Victim) {
 
 			FTimerHandle EliminatedMsgTimer;
 			FTimerDelegate EliminatedMsgDelegate;
-			EliminatedMsgDelegate.BindUFunction(this, FName("ElimAnnouncementTimerFinished"), EliminatedAnnouncementWidget);
+			EliminatedMsgDelegate.BindUFunction(this, FName("EliminatedAnnouncementTimerFinished"), EliminatedAnnouncementWidget);
 			GetWorldTimerManager().SetTimer(EliminatedMsgTimer,
 				EliminatedMsgDelegate, EliminatedAnnouncementTime, false);
 		}

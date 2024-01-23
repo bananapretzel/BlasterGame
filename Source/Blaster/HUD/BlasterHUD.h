@@ -73,6 +73,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float EliminatedAnnouncementTime = 5.f;
 
+	UFUNCTION()
 	void EliminatedAnnouncementTimerFinished(UEliminatedAnnouncement* MsgToRemove);
 
 	UPROPERTY()
