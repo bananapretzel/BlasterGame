@@ -47,6 +47,8 @@ void ABlasterPlayerState::AddToDefeats(int32 DefeatsAmount) {
 	}
 }
 
+
+
 void ABlasterPlayerState::OnRep_Defeats() {
 	Character = Character == nullptr ? Cast<ABlasterCharacter>(GetPawn()) : Character;
 	if (Character) {
@@ -65,4 +67,21 @@ void ABlasterPlayerState::ClientUpdateKillFeed_Implementation(const FString& Kil
 	if (Controller) {
 		Controller->SetHUDKilledBy(Killer);
 	}
+}
+
+
+void ABlasterPlayerState::SetTeam(ETeam TeamToSet) {
+	Team = TeamToSet;
+	ABlasterCharacter* BCharacter = Cast<ABlasterCharacter>(GetPawn());
+	if (BCharacter) {
+		BCharacter->SetTeamColour(Team);
+	}
+}
+
+void ABlasterPlayerState::OnRep_Team() {
+	ABlasterCharacter* BCharacter = Cast<ABlasterCharacter>(GetPawn());
+	if (BCharacter) {
+		BCharacter->SetTeamColour(Team);
+	}
+
 }
