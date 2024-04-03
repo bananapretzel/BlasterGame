@@ -279,7 +279,7 @@ private:
 	float AO_Pitch;
 
 	void TurnInPlace(float DeltaTime);
-	void HideCameraIfCharacterClose();
+	void HideCharacterIfCameraClose();
 
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;

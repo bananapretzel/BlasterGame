@@ -197,7 +197,7 @@ void ABlasterCharacter::MulticastGainedTheLead_Implementation() {
 	if (CrownComponent == nullptr) {
 		CrownComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			CrownSystem,
-			GetCapsuleComponent(),
+			GetMesh(),
 			FName(),
 			GetActorLocation() + FVector(0.f, 0.f, 110.f),
 			GetActorRotation(),
@@ -248,7 +248,7 @@ void ABlasterCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	RotateInPlace(DeltaTime);
-	HideCameraIfCharacterClose();
+	HideCharacterIfCameraClose();
 	PollInit();
 }
 
@@ -679,7 +679,7 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime) {
 	}
 }
 
-void ABlasterCharacter::HideCameraIfCharacterClose() {
+void ABlasterCharacter::HideCharacterIfCameraClose() {
 	if (!IsLocallyControlled()) {
 		return;
 	}
@@ -688,9 +688,15 @@ void ABlasterCharacter::HideCameraIfCharacterClose() {
 		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh()) {
 			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
 		}
+		if (Combat && Combat->SecondaryWeapon && Combat->SecondaryWeapon->GetWeaponMesh()) {
+			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
+		}
 	} else {
 		GetMesh()->SetVisibility(true);
 		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh()) {
+			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
+		}
+		if (Combat && Combat->SecondaryWeapon && Combat->SecondaryWeapon->GetWeaponMesh()) {
 			Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
 		}
 	}
@@ -773,6 +779,7 @@ void ABlasterCharacter::MulticastEliminate_Implementation(bool bPlayerLeftGame) 
 	// Disable collision
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttachedGrenade->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// Spawn elim bot
 	if (ElimBotEffect) {
