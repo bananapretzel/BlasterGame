@@ -333,9 +333,9 @@ private:
 
 	bool bLeftGame = false;
 
-	
+	UPROPERTY()
+	class ABlasterGameMode* BlasterGameMode;
 
-	
 
 	/**
 	* Dissolve effect
