@@ -353,7 +353,6 @@ void ABlasterPlayerController::SetHUDGrenades(int32 Grenades) {
 void ABlasterPlayerController::SetHUDRedTeamScore(int32 RedScore) {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 
-	BlasterHUD->CharacterOverlay->RemoveFromParent();
 	bool bHUDValid = BlasterHUD->CharacterOverlay &&
 		BlasterHUD->CharacterOverlay->RedTeamScore;
 	if (bHUDValid) {
@@ -369,7 +368,7 @@ void ABlasterPlayerController::SetHUDBlueTeamScore(int32 BlueScore) {
 		BlasterHUD->CharacterOverlay->BlueTeamScore;
 	if (bHUDValid) {
 		FString ScoreText = FString::Printf(TEXT("%d"), BlueScore);
-		BlasterHUD->CharacterOverlay->RedTeamScore->SetText(FText::FromString(ScoreText));
+		BlasterHUD->CharacterOverlay->BlueTeamScore->SetText(FText::FromString(ScoreText));
 	}
 }
 

@@ -3,6 +3,7 @@
 #include "BlasterGameState.h"
 #include "Net/UnrealNetwork.h"
 #include "Blaster/PlayerState/BlasterPlayerState.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
 
 void ABlasterGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -26,15 +27,37 @@ void ABlasterGameState::UpdateTopScore(ABlasterPlayerState* ScoringPlayer) {
 }
 
 void ABlasterGameState::RedTeamScores() {
-	RedTeamScore++;
+	++RedTeamScore;
+	
+	ABlasterPlayerController* BlasterPlayer = 
+		Cast<ABlasterPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (BlasterPlayer) {
+		BlasterPlayer->SetHUDRedTeamScore(RedTeamScore);
+	}
 }
 
 void ABlasterGameState::BlueTeamScores() {
-	BlueTeamScore++;
+	++BlueTeamScore;
+
+	ABlasterPlayerController* BlasterPlayer =
+		Cast<ABlasterPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (BlasterPlayer) {
+		BlasterPlayer->SetHUDBlueTeamScore(BlueTeamScore);
+	}
 }
 
 void ABlasterGameState::OnRep_RedTeamScore() {
+	ABlasterPlayerController* BPlayer =
+		Cast<ABlasterPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (BPlayer) {
+		BPlayer->SetHUDRedTeamScore(RedTeamScore);
+	}
 }
 
 void ABlasterGameState::OnRep_BlueTeamScore() {
+	ABlasterPlayerController* BPlayer =
+		Cast<ABlasterPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (BPlayer) {
+		BPlayer->SetHUDBlueTeamScore(BlueTeamScore);
+	}
 }
