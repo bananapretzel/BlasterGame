@@ -1075,6 +1075,13 @@ void ABlasterCharacter::UpdateHUDWeaponType() {
 	BlasterPlayerController->SetHUDWeaponName(GetEquippedWeapon()->GetWeaponType());
 }
 
+bool ABlasterCharacter::IsHoldingTheFlag() const {
+	if (Combat == nullptr) {
+		return false;
+	}
+	return Combat->bHoldingTheFlag;
+}
+
 bool ABlasterCharacter::IsLocallyReloading() {
 	if (Combat == nullptr) return false;
 	return Combat->bLocallyReloading;

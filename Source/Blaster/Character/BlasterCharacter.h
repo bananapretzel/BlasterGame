@@ -440,5 +440,6 @@ public:
 	FORCEINLINE UStaticMeshComponent* GetAttachedGrenande() const { return AttachedGrenade; }
 	FORCEINLINE UBuffComponent* GetBuff() const { return BuffComponent; }
 	FORCEINLINE ULagCompensationComponent* GetLagCompensation() const { return LagCompensation; }
+	FORCEINLINE bool IsHoldingTheFlag() const;
 	bool IsLocallyReloading();
 };
