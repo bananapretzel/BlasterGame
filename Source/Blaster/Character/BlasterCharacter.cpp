@@ -288,10 +288,15 @@ void ABlasterCharacter::PollInit() {
 }
 
 void ABlasterCharacter::RotateInPlace(float DeltaTime) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		bUseControllerRotationYaw = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		return;
+	}
 	if (bDisableGameplay) {
 		bUseControllerRotationYaw = false;
 		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
-
 		return;
 	}
 	// If not a simulated proxy
@@ -414,6 +419,8 @@ void ABlasterCharacter::EquipButtonPressed(const FInputActionValue& Value) {
 	UE_LOG(LogTemp, Warning, TEXT("Equipbuttonpressed function activated"));
 
 	if (Combat) {
+		if (Combat->bHoldingTheFlag) { return;
+		}
 		if (Combat->CombatState == ECombatState::ECS_Unoccupied) {
 			ServerEquipButtonPressed();
 		}
@@ -422,6 +429,9 @@ void ABlasterCharacter::EquipButtonPressed(const FInputActionValue& Value) {
 }
 
 void ABlasterCharacter::ReloadButtonPressed(const FInputActionValue& Value) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
@@ -433,11 +443,17 @@ void ABlasterCharacter::ReloadButtonPressed(const FInputActionValue& Value) {
 void ABlasterCharacter::GrenadeButtonPressed(const FInputActionValue& Value) {
 	UE_LOG(LogTemp, Warning, TEXT("GrenadeButtonPressed function activated"));
 	if (Combat) {
+		if (Combat->bHoldingTheFlag) {
+			return;
+		}
 		Combat->ThrowGrenade();
 	}
 }
 
 void ABlasterCharacter::SwapWeaponsButtonPressed(const FInputActionValue& Value) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
@@ -458,6 +474,9 @@ void ABlasterCharacter::SwapWeaponsButtonPressed(const FInputActionValue& Value)
 }
 
 void ABlasterCharacter::CrouchButtonPressed(const FInputActionValue& Value) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
@@ -474,6 +493,9 @@ void ABlasterCharacter::CrouchButtonReleased(const FInputActionValue& Value) {
 }
 
 void ABlasterCharacter::AimButtonPressed(const FInputActionValue& Value) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
@@ -484,6 +506,9 @@ void ABlasterCharacter::AimButtonPressed(const FInputActionValue& Value) {
 }
 
 void ABlasterCharacter::AimButtonReleased(const FInputActionValue& Value) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
@@ -493,6 +518,9 @@ void ABlasterCharacter::AimButtonReleased(const FInputActionValue& Value) {
 	}
 }
 void ABlasterCharacter::FireButtonPressed(const FInputActionValue& Value) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
@@ -502,6 +530,9 @@ void ABlasterCharacter::FireButtonPressed(const FInputActionValue& Value) {
 	}
 }
 void ABlasterCharacter::FireButtonReleased(const FInputActionValue& Value) {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
@@ -655,6 +686,9 @@ void ABlasterCharacter::SimProxiesTurn() {
 }
 
 void ABlasterCharacter::Jump() {
+	if (Combat && Combat->bHoldingTheFlag) {
+		return;
+	}
 	if (bDisableGameplay) {
 		return;
 	}
