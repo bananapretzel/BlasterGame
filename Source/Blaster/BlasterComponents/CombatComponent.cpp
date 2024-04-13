@@ -484,9 +484,10 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip) {
 	if (WeaponToEquip->GetWeaponType() == EWeaponType::EWT_Flag) {
 		Character->Crouch();
 		bHoldingTheFlag = true;
-		AttachFlagToLeftHand(WeaponToEquip);
 		WeaponToEquip->SetWeaponState(EWeaponState::EWS_Equipped);
+		AttachFlagToLeftHand(WeaponToEquip);
 		WeaponToEquip->SetOwner(Character);
+		TheFlag = WeaponToEquip;
 	} else {
 		if (EquippedWeapon != nullptr && SecondaryWeapon == nullptr) {
 			EquipSecondaryWeapon(WeaponToEquip);

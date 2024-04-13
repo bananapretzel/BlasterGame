@@ -41,7 +41,7 @@ public:
 	bool IsEmpty();
 	bool IsFull();
 	void SetWeaponState(EWeaponState State);
-	void Dropped();
+	virtual void Dropped();
 	void AddAmmo(int32 AmmoToAdd);
 	FVector TraceEndWithScatter(const FVector& HitTarget);
 
