@@ -32,6 +32,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Blaster/GameState/BlasterGameState.h"
+#include "Blaster/PlayerStart/TeamPlayerStart.h"
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter() {
@@ -275,9 +276,7 @@ void ABlasterCharacter::PollInit() {
 	if (BlasterPlayerState == nullptr) {
 		BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
 		if (BlasterPlayerState) {
-			BlasterPlayerState->AddToScore(0.f);
-			BlasterPlayerState->AddToDefeats(0);
-			SetTeamColour(BlasterPlayerState->GetTeam());
+			OnPlayerStateInitialised();
 
 			ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));
 			if (BlasterGameState && BlasterGameState->TopScoringPlayers.Contains(BlasterPlayerState)) {
@@ -309,6 +308,31 @@ void ABlasterCharacter::RotateInPlace(float DeltaTime) {
 		}
 		CalculateAO_Pitch();
 	}
+}
+
+void ABlasterCharacter::SetSpawnPoint() {
+	if (HasAuthority() && BlasterPlayerState->GetTeam() != ETeam::ET_NoTeam) {
+		TArray<AActor*> SpawnPoints;
+		UGameplayStatics::GetAllActorsOfClass(this, ATeamPlayerStart::StaticClass(), SpawnPoints);
+		TArray<ATeamPlayerStart*> TeamSpawnPoints;
+		for (auto Spawn : SpawnPoints) {
+			ATeamPlayerStart* TeamStart = Cast<ATeamPlayerStart>(Spawn);
+			if (TeamStart && TeamStart->Team == BlasterPlayerState->GetTeam()) {
+				TeamSpawnPoints.Add(TeamStart);
+			}
+		}
+		if (TeamSpawnPoints.Num() > 0) {
+			ATeamPlayerStart* ChosenSpawnPoint = TeamSpawnPoints[FMath::RandRange(0, TeamSpawnPoints.Num()-1)];
+			SetActorLocationAndRotation(ChosenSpawnPoint->GetActorLocation(), ChosenSpawnPoint->GetActorRotation());
+		}
+	}
+}
+
+void ABlasterCharacter::OnPlayerStateInitialised() {
+	BlasterPlayerState->AddToScore(0.f);
+	BlasterPlayerState->AddToDefeats(0);
+	SetTeamColour(BlasterPlayerState->GetTeam());
+	SetSpawnPoint();
 }
 
 // Called to bind functionality to input

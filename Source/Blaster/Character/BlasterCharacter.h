@@ -144,8 +144,9 @@ protected:
 	void CalculateAO_Pitch();
 	void SimProxiesTurn();
 	virtual void Jump() override;
-
 	void RotateInPlace(float DeltaTime);
+	void SetSpawnPoint();
+	void OnPlayerStateInitialised();
 
 	UFUNCTION()
 	void RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
