@@ -313,7 +313,7 @@ void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
 	if (BlasterCharacter) {
-		if (WeaponType == EWeaponType::EWT_Flag && BlasterCharacter->GetTeam() != Team) {
+		if (WeaponType == EWeaponType::EWT_Flag && BlasterCharacter->GetTeam() == Team) {
 			return;
 		}
 		if (BlasterCharacter->IsHoldingTheFlag()) {
