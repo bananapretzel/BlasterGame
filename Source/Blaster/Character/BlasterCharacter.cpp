@@ -717,9 +717,9 @@ void ABlasterCharacter::SimProxiesTurn() {
 }
 
 void ABlasterCharacter::Jump() {
-	if (Combat && Combat->bHoldingTheFlag) {
-		return;
-	}
+	//if (Combat && Combat->bHoldingTheFlag) {
+	//	return;
+	//}
 	if (bDisableGameplay) {
 		return;
 	}
